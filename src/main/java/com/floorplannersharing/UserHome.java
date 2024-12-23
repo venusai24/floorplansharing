@@ -9,11 +9,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import java.awt.*;
-
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -222,7 +222,25 @@ public class UserHome extends JFrame {
         JOptionPane.showMessageDialog(this, "Failed to initialize Dropbox client: " + e.getMessage());
     }
 }
+    public void downloadFile(String dropboxFilePath, String localFilePath) {
+        try {
+            // Create an output stream for the local file
+            try (FileOutputStream outputStream = new FileOutputStream(localFilePath)) {
+                FileMetadata metadata = dropboxClient.files()
+                        .downloadBuilder(dropboxFilePath)
+                        .download(outputStream);
 
+                System.out.println("File downloaded successfully!");
+                System.out.println("Downloaded File Metadata:");
+                System.out.println("Name: " + metadata.getName());
+                System.out.println("Path: " + metadata.getPathLower());
+                System.out.println("Size: " + metadata.getSize() + " bytes");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Failed to download file: " + e.getMessage());
+        }
+    }
 
     /**
      * Handle File Selection and Metadata Input
@@ -321,7 +339,10 @@ public class UserHome extends JFrame {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(centerPanel, "Clicked on file: " + file.getFileName());
+                        dispose();
+                        SketchApp app = new SketchApp();
+                        app.setVisible(true);
+
                         // Add specific action logic here.
                     });
                 }
