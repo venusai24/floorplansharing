@@ -1,5 +1,7 @@
 package com.floorplannersharing;
 import javax.swing.*;
+import javax.xml.transform.Result;
+
 import com.dropbox.core.DbxRequestConfig;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.FileMetadata;
@@ -165,7 +167,7 @@ public class UserHome extends JFrame {
                     public void mouseClicked(MouseEvent e) {
                         SwingUtilities.invokeLater(() -> {
                             dispose();
-                            File f = downloadFile("/uploads/" + file.getFileName());
+                            File f = downloadFile("/uploads/" + file.getFileId());
                             SketchApp app = new SketchApp(f);
                             app.setVisible(true);                
                             // Add specific action logic here.
@@ -293,7 +295,7 @@ public class UserHome extends JFrame {
         //Properties properties = new Properties();
         //properties.load(inputStream);
 //
-        String accessToken = "sl.CDEETZVyU-dFgjVqOZqD5Vequ39ZOYKRE0LDobnUh-7wE1Cm-LARrdkto5XWz2w9dXHIa0jX80v7yt4ssgsMZty-efMSnLqFqDKS8JxDlZT4ii-gwEg3cERRdjVREXaMn9WAR0QM_IMlCHFSIc7k";
+        String accessToken = "sl.CDICT2bglVPB3AX5T2ve-oC8LuyH6wyGy6yjjwYXF_EBJvw1R02Nn-BUF4EInXiFuswA3ZCxaZGk0KLYAT2_KZsk6tAjNUWUL4XG29Icghj23N7JqIELL6Nh0W1Prhi7ykxnSG_r6NK_rHmw25wm";
         //if (accessToken == null || accessToken.isEmpty()) {
         //    throw new IllegalArgumentException("DROPBOX_ACCESS_TOKEN is not configured in config.properties");
         //}
@@ -418,7 +420,7 @@ public File downloadFile(String dropboxFilePath) {
             // Step 4: Process the result
             while (resultSet.next()) {
                 LocalDateTime uploadDate = resultSet.getObject("upload_date", LocalDateTime.class);
-                UploadedFile uf = new UploadedFile(resultSet.getString("file_name"), uploadDate, resultSet.getString("link"));
+                UploadedFile uf = new UploadedFile(resultSet.getString("file_name"), uploadDate, resultSet.getString("link"), resultSet.getInt("file_id"));
                 uploadedFiles.add(uf);
             }
         }catch (SQLException e) {
@@ -444,7 +446,7 @@ public File downloadFile(String dropboxFilePath) {
                 public void mouseClicked(MouseEvent e) {
                     SwingUtilities.invokeLater(() -> {
                         dispose();
-                        File f = downloadFile("/uploads/" + file.getFileName());
+                        File f = downloadFile("/uploads/" + file.getFileID());
                         SketchApp app = new SketchApp(f);
                         app.setVisible(true);                
                         // Add specific action logic here.
@@ -466,6 +468,47 @@ public File downloadFile(String dropboxFilePath) {
     }
 
     private void uploadFileToDropbox(String userName, String fileName, String accessMode, String customUsers) {
+        int ID = 0;
+        String fileLink = "";
+        String url = "jdbc:mysql://localhost:3306/floorplanner_db"; // Replace with your database URL
+        String username = "root"; // Replace with your database username
+        String password = "venusql2024"; // Replace with your database password
+        
+        // SQL query to insert a new row into the table
+        String sql = "INSERT INTO files (file_name, uploaded_by, access, link, file_id) VALUES (?, ?, ?, ?, ?)"; // Replace with your table and column names
+        String findrows = "SELECT COUNT(*) AS row_count FROM files";
+        // Data to insert
+        String value1 = fileName; // Replace with your data
+        String value2 = userName;
+        String value3 = accessMode;
+        
+         // Replace with your data
+         // Example of LocalDateTime
+        
+        // JDBC objects
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        PreparedStatement ps = null;
+        
+        try {
+            // Step 1: Establish the connection
+            connection = DriverManager.getConnection(url, username, password);
+            ps = connection.prepareStatement(findrows);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                int rowCount = rs.getInt("row_count");
+                ID = rowCount + 1;
+            }
+        }catch(SQLException e){
+            e.printStackTrace();
+        }finally{
+            try {
+                if (ps != null) ps.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
         try {
             if (dropboxClient == null) {
                 JOptionPane.showMessageDialog(this, "Dropbox client is not initialized. Please try again.");
@@ -473,13 +516,13 @@ public File downloadFile(String dropboxFilePath) {
             }
             // Prepare File for Upload
             try (InputStream in = new FileInputStream(selectedFile)) {
-                String dropboxPath = "/uploads/" + fileName;
+                String dropboxPath = "/uploads/" + String.valueOf(ID);
 
                 FileMetadata metadata = dropboxClient.files().uploadBuilder(dropboxPath)
                         .withMode(WriteMode.ADD)
                         .uploadAndFinish(in);
 
-                String fileLink = dropboxClient.sharing().createSharedLinkWithSettings(dropboxPath).getUrl();
+                fileLink = dropboxClient.sharing().createSharedLinkWithSettings(dropboxPath).getUrl();
 
                 System.out.println("File Uploaded Successfully: " + metadata.getPathDisplay());
                 JOptionPane.showMessageDialog(this, "File uploaded successfully!\nFile URL: " + fileLink);
@@ -496,23 +539,8 @@ public File downloadFile(String dropboxFilePath) {
             JOptionPane.showMessageDialog(this, "File upload failed: " + e.getMessage());
         }
 
-        String url = "jdbc:mysql://localhost:3306/floorplanner_db"; // Replace with your database URL
-        String username = "root"; // Replace with your database username
-        String password = "venusql2024"; // Replace with your database password
-        
-        // SQL query to insert a new row into the table
-        String sql = "INSERT INTO files (file_name, uploaded_by, access) VALUES (?, ?, ?)"; // Replace with your table and column names
-
-        // Data to insert
-        String value1 = fileName; // Replace with your data
-        String value2 = userName;
-        String value3 = accessMode; // Replace with your data
-         // Example of LocalDateTime
-        
-        // JDBC objects
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
-
+        String value4 = fileLink;
+        int value5 = ID;
         try {
             // Step 1: Establish the connection
             connection = DriverManager.getConnection(url, username, password);
@@ -521,7 +549,9 @@ public File downloadFile(String dropboxFilePath) {
             preparedStatement = connection.prepareStatement(sql);
             preparedStatement.setString(1, value1); // Set the first parameter
             preparedStatement.setString(2, value2);
-            preparedStatement.setString(3, value3);    // Set the second parameter
+            preparedStatement.setString(3, value3);
+            preparedStatement.setString(4, value4);
+            preparedStatement.setInt(5, value5);    // Set the second parameter
              // Set the third parameter (LocalDateTime)
 
             // Step 3: Execute the query
@@ -543,16 +573,18 @@ public File downloadFile(String dropboxFilePath) {
         }
     }
 
-    private static class UploadedFile {
+    private class UploadedFile {
         private final String fileName;
         private final LocalDateTime uploadDate;
         private String filelink;
+        private final int file_id;
         
 
-        public UploadedFile(String fileName, LocalDateTime uploadDate, String filelink) {
+        public UploadedFile(String fileName, LocalDateTime uploadDate, String filelink, int file_id) {
             this.fileName = fileName;
             this.uploadDate = uploadDate;
             this.filelink = filelink;
+            this.file_id = file_id;
         }
 
         public String getFileName() {
@@ -565,6 +597,9 @@ public File downloadFile(String dropboxFilePath) {
 
         public String getFilelink(){
             return filelink;
+        }
+        public int getFileID(){
+            return file_id;
         }
     }
 
