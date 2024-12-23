@@ -110,11 +110,35 @@ public class UserHome extends JFrame {
         JLabel dashboardTitle = new JLabel("Dashboard");
         dashboardTitle.setFont(new Font("SansSerif", Font.BOLD, 24));
 
-        JTextField searchBar = new JTextField("Search for documents, files, etc");
-        searchBar.setPreferredSize(new Dimension(300, 30));
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+        // Search bar
+        JTextField searchBar = new JTextField(20);
+        searchBar.setPreferredSize(new Dimension(200, 30));
+
+        // Search button
+        JButton searchButton = new JButton("Search");
+        searchButton.setPreferredSize(new Dimension(100, 30));
+
+        // Action to handle search
+        ActionListener searchAction = e -> {
+            String searchQuery = searchBar.getText();
+            System.out.println("Search Query: " + searchQuery); // Replace with your search logic
+            JOptionPane.showMessageDialog(null, "You searched for: " + searchQuery);
+        };
+
+        // Add action listener for pressing ENTER in the search bar
+        searchBar.addActionListener(searchAction);
+
+        // Add action listener for the Search button
+        searchButton.addActionListener(searchAction);
+
+        // Add components to the search panel
+        searchPanel.add(searchBar);
+        searchPanel.add(searchButton);
 
         topPanel.add(dashboardTitle, BorderLayout.WEST);
-        topPanel.add(searchBar, BorderLayout.EAST);
+        topPanel.add(searchPanel, BorderLayout.EAST);
 
         // Center panel for dashboard content
         centerPanel = new JPanel();
@@ -144,6 +168,7 @@ public class UserHome extends JFrame {
         add(centerPanel, BorderLayout.CENTER);
 
         setVisible(true);
+
 
         initDropboxClient();
     }
@@ -222,10 +247,26 @@ public class UserHome extends JFrame {
         JOptionPane.showMessageDialog(this, "Failed to initialize Dropbox client: " + e.getMessage());
     }
 }
-    public void downloadFile(String dropboxFilePath, String localFilePath) {
-        try {
-            // Create an output stream for the local file
-            try (FileOutputStream outputStream = new FileOutputStream(localFilePath)) {
+public File downloadFile(String dropboxFilePath) {
+    try {
+        // Open Save Dialog
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Choose Save Location");
+        fileChooser.setSelectedFile(new File(new File(dropboxFilePath).getName())); // Default file name
+        
+        int userSelection = fileChooser.showSaveDialog(null);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File localFile = fileChooser.getSelectedFile();
+
+            // Ensure parent directory exists
+            File parentDir = localFile.getParentFile();
+            if (!parentDir.exists()) {
+                parentDir.mkdirs(); // Create parent directory if it doesn't exist
+            }
+
+            // Download File
+            try (FileOutputStream outputStream = new FileOutputStream(localFile)) {
                 FileMetadata metadata = dropboxClient.files()
                         .downloadBuilder(dropboxFilePath)
                         .download(outputStream);
@@ -235,12 +276,18 @@ public class UserHome extends JFrame {
                 System.out.println("Name: " + metadata.getName());
                 System.out.println("Path: " + metadata.getPathLower());
                 System.out.println("Size: " + metadata.getSize() + " bytes");
+                JOptionPane.showMessageDialog(null, "File downloaded successfully to: " + localFile.getAbsolutePath());
+                return localFile;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Failed to download file: " + e.getMessage());
+        } else {
+            System.out.println("File download cancelled by user.");
         }
+    } catch (Exception e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Failed to download file: " + e.getMessage());
     }
+    return null;
+}
 
     /**
      * Handle File Selection and Metadata Input
@@ -331,7 +378,6 @@ public class UserHome extends JFrame {
         for (UploadedFile file : uploadedFiles) {
             JPanel filePanel = new JPanel(new BorderLayout());
             filePanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-
             JLabel fileNameLabel = new JLabel(file.getFileName());
             fileNameLabel.setForeground(Color.BLUE);
             fileNameLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -340,9 +386,9 @@ public class UserHome extends JFrame {
                 public void mouseClicked(MouseEvent e) {
                     SwingUtilities.invokeLater(() -> {
                         dispose();
-                        SketchApp app = new SketchApp();
-                        app.setVisible(true);
-
+                        File f = downloadFile("/uploads/" + file.getFileName());
+                        SketchApp app = new SketchApp(f);
+                        app.setVisible(true);                
                         // Add specific action logic here.
                     });
                 }

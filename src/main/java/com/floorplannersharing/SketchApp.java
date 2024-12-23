@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
+import java.io.File;
+
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -166,6 +168,66 @@ public class SketchApp extends JFrame{
         statusLabel.setText("Status: Ready");
         return sketchPanel.getDrawingTool();
         
+    }
+
+    public SketchApp(File f) {
+        setTitle("2D Floor Planner");
+        // setSize(800, 600);
+        // setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximize the window
+        setSize(Toolkit.getDefaultToolkit().getScreenSize()); // Set size to screen resolution
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        getContentPane().setBackground(Color.LIGHT_GRAY);
+
+
+        
+
+        // ----------- Initialising Area ---------------
+        // the sidebat panel for switching between tools 
+        toolPanel = new ToolPanel(this);
+        // pass in RectTool, abstract class DrawingTool handles the implementation
+        sketchPanel = new SketchPanel(new RoomTool()); 
+        // sketchPanel = new SketchPanel(new FurnitureTool());
+        
+        //Calling this method before because I need instance of statusLabel to put into CanvasObejctManager
+        createBottomBar();
+
+        //Hopefully this gets me the same instance of objectManager as declared in SketchPanel
+        CanvasObjectManager objectManager = CanvasObjectManager.getInstance();
+        objectManager.getLabel(statusLabel);
+        
+        //Sending Label to SketchPanel for move collision detections
+        sketchPanel.getJLabel(statusLabel);
+
+        // file manager
+        fileManager = new FileManager(this, sketchPanel);
+        fileManager.loadFromFile(f);
+        
+        
+        
+        // ----------- Adding Area ---------------
+        add(toolPanel, BorderLayout.WEST);
+        add(sketchPanel, BorderLayout.CENTER); // display main sketch area in center
+
+        // Adding clear canvas button
+        // clearButton = new JButton("Clear Canvas");
+        // clearButton.addActionListener(e -> sketchPanel.clearCanvas()); // how do lambda functions work??
+        // add(clearButton, BorderLayout.SOUTH);
+
+        // undoRect = new JButton("Undo Last Rectangle");
+        // undoRect.addActionListener(e -> sketchPanel.undoLastRect());
+        // add(undoRect, BorderLayout.EAST);
+
+        // top menu bar
+        createMenuBar();
+
+        // bottom panel with toggle buttons
+        
+
+        setVisible(true);
+
     }
 
     public static void main(String[] args) throws Exception {

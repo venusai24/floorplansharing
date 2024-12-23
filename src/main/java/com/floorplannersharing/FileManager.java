@@ -73,4 +73,21 @@ public class FileManager {
             }
         }
     }
+
+    public void loadFromFile(File file){
+        Gson json = new GsonBuilder()
+        .registerTypeAdapter(CanvasObject.class, new CanvasObjectTypeAdapter())
+        .registerTypeAdapter(Color.class, new ColorTypeAdapter())
+        .create();
+        try (FileReader reader = new FileReader(file)) {
+            ArrayList<CanvasObject> importedObjects = json.fromJson(reader, new TypeToken<ArrayList<CanvasObject>>() {}.getType());
+            // System.out.println(importedObjects.size()); // debug
+            System.out.println(importedObjects); // debug
+            objectManager.loadObjects(importedObjects);
+            sketchPanel.repaint();
+            JOptionPane.showMessageDialog(sketchApp, "Canvas data imported from " + file.getName() + " successfully!");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
