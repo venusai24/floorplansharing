@@ -119,12 +119,70 @@ public class UserHome extends JFrame {
         // Search button
         JButton searchButton = new JButton("Search");
         searchButton.setPreferredSize(new Dimension(100, 30));
-
         // Action to handle search
         ActionListener searchAction = e -> {
             String searchQuery = searchBar.getText();
-            System.out.println("Search Query: " + searchQuery); // Replace with your search logic
-            JOptionPane.showMessageDialog(null, "You searched for: " + searchQuery);
+            List<SearchedFile> searchedFiles = new ArrayList<>();
+            String url = "jdbc:mysql://localhost:3306/floorplanner_db"; // Replace with your database URL
+            String user = "root"; // Replace with your database username
+            String password = "venusql2024"; // Replace with your database password
+
+            String query = "SELECT file_id, file_name, uploaded_by, link FROM files WHERE file_name = ? AND access = 'public'";
+
+            try (Connection conn = DriverManager.getConnection(url, user, password);
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+                // Set the file name parameter
+                pstmt.setString(1, searchQuery);
+
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        int fileId = rs.getInt("file_id");
+                        String file_name = rs.getString("file_name");
+                        String uploadedBy = rs.getString("uploaded_by");
+                        String link = rs.getString("link");
+
+                        // Create a SearchedFile object and add it to the list
+                        SearchedFile file = new SearchedFile(fileId, file_name, uploadedBy, link);
+                        searchedFiles.add(file);
+                    }
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                return;
+            }
+            centerPanel.removeAll();
+            JLabel label = new JLabel("Files with name: " + searchQuery);
+            centerPanel.add(label, BorderLayout.NORTH);
+            for (SearchedFile file : searchedFiles) {
+                JPanel filePanel = new JPanel(new BorderLayout());
+                filePanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                JLabel fileNameLabel = new JLabel(file.getFileName() + "        " + file.getUploadedBy());
+                fileNameLabel.setForeground(Color.BLUE);
+                fileNameLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                fileNameLabel.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        SwingUtilities.invokeLater(() -> {
+                            dispose();
+                            File f = downloadFile("/uploads/" + file.getFileName());
+                            SketchApp app = new SketchApp(f);
+                            app.setVisible(true);                
+                            // Add specific action logic here.
+                        });
+                    }
+                });
+    
+                
+                
+    
+                filePanel.add(fileNameLabel, BorderLayout.WEST);
+                
+    
+                centerPanel.add(filePanel);
+            }
+
+
         };
 
         // Add action listener for pressing ENTER in the search bar
@@ -300,7 +358,7 @@ public File downloadFile(String dropboxFilePath) {
             selectedFile = fileChooser.getSelectedFile();
 
             JTextField fileNameField = new JTextField(selectedFile.getName(), 20);
-            JComboBox<String> accessModeCombo = new JComboBox<>(new String[]{"Public", "Private"});
+            JComboBox<String> accessModeCombo = new JComboBox<>(new String[]{"public", "private"});
             JTextField customUsersField = new JTextField();
 
             centerPanel.removeAll();
@@ -443,11 +501,12 @@ public File downloadFile(String dropboxFilePath) {
         String password = "venusql2024"; // Replace with your database password
         
         // SQL query to insert a new row into the table
-        String sql = "INSERT INTO files (file_name, uploaded_by) VALUES (?, ?)"; // Replace with your table and column names
+        String sql = "INSERT INTO files (file_name, uploaded_by, access) VALUES (?, ?, ?)"; // Replace with your table and column names
 
         // Data to insert
         String value1 = fileName; // Replace with your data
-        String value2 = userName; // Replace with your data
+        String value2 = userName;
+        String value3 = accessMode; // Replace with your data
          // Example of LocalDateTime
         
         // JDBC objects
@@ -461,7 +520,8 @@ public File downloadFile(String dropboxFilePath) {
             // Step 2: Create the PreparedStatement
             preparedStatement = connection.prepareStatement(sql);
             preparedStatement.setString(1, value1); // Set the first parameter
-            preparedStatement.setString(2, value2);    // Set the second parameter
+            preparedStatement.setString(2, value2);
+            preparedStatement.setString(3, value3);    // Set the second parameter
              // Set the third parameter (LocalDateTime)
 
             // Step 3: Execute the query
@@ -505,6 +565,48 @@ public File downloadFile(String dropboxFilePath) {
 
         public String getFilelink(){
             return filelink;
+        }
+    }
+
+    class SearchedFile {
+        private int fileId;
+        private String fileName;
+        private String uploadedBy;
+        private String link;
+    
+        // Constructor
+        public SearchedFile(int fileId, String fileName, String uploadedBy, String link) {
+            this.fileId = fileId;
+            this.fileName = fileName;
+            this.uploadedBy = uploadedBy;
+            this.link = link;
+        }
+    
+        // Getters and toString for debugging
+        public int getFileId() {
+            return fileId;
+        }
+    
+        public String getFileName() {
+            return fileName;
+        }
+    
+        public String getUploadedBy() {
+            return uploadedBy;
+        }
+    
+        public String getLink() {
+            return link;
+        }
+    
+        @Override
+        public String toString() {
+            return "SearchedFile{" +
+                    "fileId=" + fileId +
+                    ", fileName='" + fileName + '\'' +
+                    ", uploadedBy='" + uploadedBy + '\'' +
+                    ", link='" + link + '\'' +
+                    '}';
         }
     }
 
