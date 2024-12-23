@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
@@ -124,36 +125,60 @@ public class UserHome extends JFrame {
         // Action to handle search
         ActionListener searchAction = e -> {
             String searchQuery = searchBar.getText();
+            System.out.println(searchQuery);
             List<SearchedFile> searchedFiles = new ArrayList<>();
             String url = "jdbc:mysql://localhost:3306/floorplanner_db"; // Replace with your database URL
             String user = "root"; // Replace with your database username
-            String password = "venusql2024"; // Replace with your database password
+            String password = "venusql2024"; // Replace with your datbase password
 
-            String query = "SELECT file_id, file_name, uploaded_by, link FROM files WHERE file_name = ? AND access = 'public'";
-
-            try (Connection conn = DriverManager.getConnection(url, user, password);
-                PreparedStatement pstmt = conn.prepareStatement(query)) {
-
+            String query = "SELECT file_id, file_name, uploaded_by, link FROM files WHERE file_name LIKE ? AND access = 'public'";
+            Connection conn = null;
+            PreparedStatement pstmt = null;
+            ResultSet rs = null;
+            try {
+                conn = DriverManager.getConnection(url, user, password);
+                System.out.println("Connected to the database: " + conn.getCatalog());
+                pstmt = conn.prepareStatement(query);
                 // Set the file name parameter
-                pstmt.setString(1, searchQuery);
+                pstmt.setString(1, "%" + searchQuery + "%");
 
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    while (rs.next()) {
-                        int fileId = rs.getInt("file_id");
-                        String file_name = rs.getString("file_name");
-                        String uploadedBy = rs.getString("uploaded_by");
-                        String link = rs.getString("link");
-
-                        // Create a SearchedFile object and add it to the list
-                        SearchedFile file = new SearchedFile(fileId, file_name, uploadedBy, link);
-                        searchedFiles.add(file);
-                    }
+                rs = pstmt.executeQuery();
+                ResultSetMetaData metaData = rs.getMetaData();
+                System.out.println("Number of columns: " + metaData.getColumnCount());
+                for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                    System.out.println("Column " + i + ": " + metaData.getColumnName(i));
                 }
+                if (!rs.isBeforeFirst()) { // Check if result set is empty
+                    System.out.println("No data found!");
+                }
+                while (rs.next()) {
+                    System.out.println("hi");
+                    int fileId = rs.getInt("file_id");
+                    String file_name = rs.getString("file_name");
+                    String uploadedBy = rs.getString("uploaded_by");
+                    String link = rs.getString("link");
+
+                    
+
+                    // Create a SearchedFile object and add it to the list
+                    SearchedFile searchedfile = new SearchedFile(fileId, file_name, uploadedBy, link);
+                    searchedFiles.add(searchedfile);
+                }
+                
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 return;
+            }finally{
+                try {
+                    if (rs != null) rs.close();
+                    if (pstmt != null) pstmt.close();
+                    if (conn != null) conn.close();
+                } catch (SQLException exp) {
+                    exp.printStackTrace();
+                }
             }
             centerPanel.removeAll();
+            System.out.println("hello");
             JLabel label = new JLabel("Files with name: " + searchQuery);
             centerPanel.add(label, BorderLayout.NORTH);
             for (SearchedFile file : searchedFiles) {
@@ -174,14 +199,10 @@ public class UserHome extends JFrame {
                         });
                     }
                 });
-    
-                
-                
-    
                 filePanel.add(fileNameLabel, BorderLayout.WEST);
-                
-    
                 centerPanel.add(filePanel);
+                repaint();
+                revalidate();
             }
 
 
