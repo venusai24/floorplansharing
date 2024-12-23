@@ -15,6 +15,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
 import java.time.LocalDateTime;
@@ -29,7 +34,7 @@ public class UserHome extends JFrame {
     private JPanel centerPanel;
     private File selectedFile;
     private DbxClientV2 dropboxClient;
-    private List<UploadedFile> uploadedFiles = new ArrayList<>();
+    
     /**
      * Launch the application.
      */
@@ -261,7 +266,50 @@ public class UserHome extends JFrame {
      private void displayUploadedFiles(String userName) {
         centerPanel.removeAll();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        String url = "jdbc:mysql://localhost:3306/floorplanner_db"; // Replace with your database URL
+        String username = "root"; // Replace with your database username
+        String password = "venusql2024"; // Replace with your database password
+        
+        // SQL query to select all rows with a specific value in a column
+        String sql = "SELECT * FROM files WHERE uploaded_by = ?"; // Replace with your table and column names
+        String valueToMatch = userName; // Replace with the value you want to search for
+        
+        // JDBC objects
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
 
+        List<UploadedFile> uploadedFiles = new ArrayList<>();
+
+        try {
+            // Step 1: Establish the connection
+            connection = DriverManager.getConnection(url, username, password);
+
+            // Step 2: Create the PreparedStatement
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, valueToMatch); // Set the parameter in the query
+
+            // Step 3: Execute the query
+            resultSet = preparedStatement.executeQuery();
+
+            // Step 4: Process the result
+            while (resultSet.next()) {
+                LocalDateTime uploadDate = resultSet.getObject("upload_date", LocalDateTime.class);
+                UploadedFile uf = new UploadedFile(resultSet.getString("file_name"), uploadDate, resultSet.getString("link"));
+                uploadedFiles.add(uf);
+            }
+        }catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            // Step 5: Clean up
+            try {
+                if (resultSet != null) resultSet.close();
+                if (preparedStatement != null) preparedStatement.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
         for (UploadedFile file : uploadedFiles) {
             JPanel filePanel = new JPanel(new BorderLayout());
             filePanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
@@ -322,15 +370,62 @@ public class UserHome extends JFrame {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "File upload failed: " + e.getMessage());
         }
+
+        String url = "jdbc:mysql://localhost:3306/floorplanner_db"; // Replace with your database URL
+        String username = "root"; // Replace with your database username
+        String password = "venusql2024"; // Replace with your database password
+        
+        // SQL query to insert a new row into the table
+        String sql = "INSERT INTO files (file_name, uploaded_by) VALUES (?, ?)"; // Replace with your table and column names
+
+        // Data to insert
+        String value1 = fileName; // Replace with your data
+        String value2 = userName; // Replace with your data
+         // Example of LocalDateTime
+        
+        // JDBC objects
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+
+        try {
+            // Step 1: Establish the connection
+            connection = DriverManager.getConnection(url, username, password);
+
+            // Step 2: Create the PreparedStatement
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, value1); // Set the first parameter
+            preparedStatement.setString(2, value2);    // Set the second parameter
+             // Set the third parameter (LocalDateTime)
+
+            // Step 3: Execute the query
+            int rowsAffected = preparedStatement.executeUpdate();
+
+            // Step 4: Check how many rows were affected
+            System.out.println(rowsAffected + " row(s) inserted.");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            // Step 5: Clean up
+            try {
+                if (preparedStatement != null) preparedStatement.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static class UploadedFile {
         private final String fileName;
         private final LocalDateTime uploadDate;
+        private String filelink;
+        
 
-        public UploadedFile(String fileName, LocalDateTime uploadDate) {
+        public UploadedFile(String fileName, LocalDateTime uploadDate, String filelink) {
             this.fileName = fileName;
             this.uploadDate = uploadDate;
+            this.filelink = filelink;
         }
 
         public String getFileName() {
@@ -339,6 +434,10 @@ public class UserHome extends JFrame {
 
         public LocalDateTime getUploadDate() {
             return uploadDate;
+        }
+
+        public String getFilelink(){
+            return filelink;
         }
     }
 
