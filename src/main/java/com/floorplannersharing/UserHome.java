@@ -1,13 +1,5 @@
 package com.floorplannersharing;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.Font;
-import java.awt.GridLayout;
 import javax.swing.*;
-
 import com.dropbox.core.DbxRequestConfig;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.FileMetadata;
@@ -16,16 +8,18 @@ import com.dropbox.core.v2.files.WriteMode;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
+
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.List;
 import java.time.LocalDateTime;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 
 public class UserHome extends JFrame {
@@ -35,6 +29,7 @@ public class UserHome extends JFrame {
     private JPanel centerPanel;
     private File selectedFile;
     private DbxClientV2 dropboxClient;
+    private List<UploadedFile> uploadedFiles = new ArrayList<>();
     /**
      * Launch the application.
      */
@@ -83,12 +78,11 @@ public class UserHome extends JFrame {
             leftPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 
             if (item.equals("Account")) {
-                navButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        displayAccountDetails(userName);
-                    }
-                });
+                navButton.addActionListener(e -> displayAccountDetails(userName));
+            } else if (item.equals("Uploaded")) {
+                navButton.addActionListener(e -> displayUploadedFiles(userName));
+            } else if (item.equals("All Plans")) {
+                navButton.addActionListener(e -> displayUploadedFiles(userName));
             }
         }
 
@@ -263,6 +257,41 @@ public class UserHome extends JFrame {
     /**
      * Upload File to Dropbox
      */
+
+     private void displayUploadedFiles(String userName) {
+        centerPanel.removeAll();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+
+        for (UploadedFile file : uploadedFiles) {
+            JPanel filePanel = new JPanel(new BorderLayout());
+            filePanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+
+            JLabel fileNameLabel = new JLabel(file.getFileName());
+            fileNameLabel.setForeground(Color.BLUE);
+            fileNameLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            fileNameLabel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(centerPanel, "Clicked on file: " + file.getFileName());
+                        // Add specific action logic here.
+                    });
+                }
+            });
+
+            JLabel fileDateLabel = new JLabel(file.getUploadDate().toString());
+            fileDateLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+
+            filePanel.add(fileNameLabel, BorderLayout.WEST);
+            filePanel.add(fileDateLabel, BorderLayout.EAST);
+
+            centerPanel.add(filePanel);
+        }
+
+        centerPanel.revalidate();
+        centerPanel.repaint();
+    }
+
     private void uploadFileToDropbox(String userName, String fileName, String accessMode, String customUsers) {
         try {
             if (dropboxClient == null) {
@@ -292,6 +321,24 @@ public class UserHome extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "File upload failed: " + e.getMessage());
+        }
+    }
+
+    private static class UploadedFile {
+        private final String fileName;
+        private final LocalDateTime uploadDate;
+
+        public UploadedFile(String fileName, LocalDateTime uploadDate) {
+            this.fileName = fileName;
+            this.uploadDate = uploadDate;
+        }
+
+        public String getFileName() {
+            return fileName;
+        }
+
+        public LocalDateTime getUploadDate() {
+            return uploadDate;
         }
     }
 
