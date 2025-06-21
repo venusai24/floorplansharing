@@ -93,8 +93,6 @@
 - **`PathManager`**  
   Manages freeform paths (not heavily used in the main UI).
 
-- **`Main`**  
-  Simple entry point (prints "Hello world!").
 
 ---
 
@@ -129,9 +127,7 @@
 ## How to Run
 
 1. **Run `SketchApp`** for the main drawing application.
-2. **Run `UserLogin`** or `UserRegistration` for user management and sharing features.
-
-
+2. **Run `UserLogin` or `UserRegistration`** for creating an account and logging in to the platform to share, upload and download floorplans.
 ---
 
 ## Dependencies
@@ -139,7 +135,7 @@
 - **Swing** (Java standard library)
 - **Gson** (for JSON serialization)
 - **Dropbox Java SDK** (for file sharing)
-- **JDBC** (for user authentication)
+- **JDBC** (for database connection)
 
 
 ## ⚙️ Configuration
