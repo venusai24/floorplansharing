@@ -28,6 +28,7 @@ import java.util.List;
 import java.time.LocalDateTime;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import io.github.cdimascio.dotenv.Dotenv;
 
 
 public class UserHome extends JFrame {
@@ -127,9 +128,11 @@ public class UserHome extends JFrame {
             String searchQuery = searchBar.getText();
             System.out.println(searchQuery);
             List<SearchedFile> searchedFiles = new ArrayList<>();
-            String url = "jdbc:mysql://localhost:3306/floorplanner_db"; // Replace with your database URL
-            String user = "root"; // Replace with your database username
-            String password = "venusql2024"; // Replace with your datbase password
+             Dotenv dotenv = Dotenv.load();  // loads .env from root folder
+
+            String url = dotenv.get("DB_URL");
+            String user = dotenv.get("DB_USER");
+            String password = dotenv.get("DB_PASSWORD"); // Replace with your datbase password
 
             String query = "SELECT file_id, file_name, uploaded_by, link FROM files WHERE file_name LIKE ? AND access = 'public'";
             Connection conn = null;
