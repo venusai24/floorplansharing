@@ -1,6 +1,6 @@
 
 
-# FloorPlannerSharing - User Authentication Module
+# FloorPlanner&Sharing
 
 This project is a Java-based application that provides user login functionality. It connects to a database and integrates with Dropbox using an access token.
 
