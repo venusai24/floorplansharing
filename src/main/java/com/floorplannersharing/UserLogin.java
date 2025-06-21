@@ -97,12 +97,12 @@ public class UserLogin extends JFrame {
                 Dotenv dotenv = Dotenv.load();  // loads .env from root folder
                 String url = dotenv.get("DB_URL");
                 String user = dotenv.get("DB_USER");
-                String password = dotenv.get("DB_PASSWORD");
+                String pswd = dotenv.get("DB_PASSWORD");
                 String userName = textField.getText();
                 String password = passwordField.getText();
                 try {
                     Connection connection = (Connection) DriverManager.getConnection(url,
-                        user, password);
+                        user, pswd);
 
                     PreparedStatement st = (PreparedStatement) connection
                         .prepareStatement("Select name, password from userauth where name=? and password=?");
