@@ -1,17 +1,31 @@
-# FloorPlanner&Sharing
+# FloorPlan & Sharing
 
 ## Overview
 
-**FloorPlannerSharing** is a Java Swing-based application for creating, editing, saving, and sharing 2D floor plans. It features a graphical interface for drawing rooms, placing furniture, adding doors and windows, and managing user accounts with file upload/download capabilities (including Dropbox integration). The codebase is modular, with each class handling a specific aspect of the application.
+**FloorPlannerSharing** is a Java desktop application for designing, saving, and sharing 2D floor plans. It provides a graphical interface for drawing rooms, placing furniture, and managing user accounts. The application supports file upload/download, including Dropbox integration, and features a user dashboard for managing and searching shared plans.
 
 ---
 
-## Core Components
+## Main Components
 
-### 1. **Canvas and Drawing**
+### 1. Drawing and Canvas Management
 
-- **`CanvasObject`**  
-  Abstract base class for all drawable objects (rooms, furniture, doors, windows). Extends `Rectangle` and defines methods for drawing, moving, rotating, and type identification.
+- **CanvasObject & Subclasses**:  
+  The abstract `CanvasObject` class is the base for all drawable items (rooms, furniture, doors, windows). Each subclass (e.g., `Room`, `Furniture`, `Door`, `Window`) implements its own drawing and interaction logic.
+
+- **CanvasObjectManager**:  
+  Singleton managing all objects on the canvas, including selection, layering, and object lists.
+
+- **DrawingTool & ToolPanel**:  
+  Abstracts the concept of a drawing tool (e.g., room tool, furniture tool, select tool). The `ToolPanel` provides a sidebar for switching between tools and customizing options (like room color).
+
+- **SketchPanel**:  
+  The main drawing area. Handles mouse events for drawing, moving, aligning, and snapping objects to a grid.
+
+- **SketchApp**:  
+  The main application window. Initializes the UI, menu bar, tool panel, and sketch panel. Handles file operations and status updates.
+
+- **Core Components**
 
 - **`Room`**  
   Represents a room with color and transparency. Implements drawing logic for filled rectangles.
@@ -22,12 +36,9 @@
 - **`Door`** and **`Window`**  
   Represent doors and windows, drawn as rectangles with specific styles (e.g., dashed lines for windows).
 
-- **`CanvasObjectManager`**  
-  Singleton class managing all canvas objects, their layering, addition/removal, and selection.
 
 ---
-
-### 2. **Drawing Tools**
+- **Drawing Tools**
 
 - **`DrawingTool`**  
   Abstract class for tools that create or manipulate canvas objects.
@@ -45,98 +56,96 @@
   Tool for selecting and moving existing objects.
 
 ---
+---
 
-### 3. **UI Components**
+### 2. File Management
 
-- **`SketchApp`**  
-  Main application window. Initializes the UI, menu bar, tool panel, and sketch panel. Handles file operations and status updates.
+- **FileManager**:  
+  Handles saving and loading floor plans as JSON files using Gson. Integrates with the UI for file dialogs and updates the canvas after import.
 
-- **`SketchPanel`**  
-  The main drawing area. Handles mouse events for drawing, moving, and aligning objects. Supports grid snapping, collision detection, and context menus for object manipulation.
-
-- **`ToolPanel`**  
-  Sidebar with buttons for selecting drawing tools and options for customizing rooms and furniture.
+- **Gson Type Adapters**:  
+  Custom adapters (`CanvasObjectTypeAdapter`, `CanvasObjectAdapterFactory`, `ColorTypeAdapter`) ensure correct serialization/deserialization of polymorphic canvas objects and colors.
 
 ---
 
-### 4. **Persistence and Serialization**
+### 3. User Management and Sharing
 
-- **`FileManager`**  
-  Handles saving/loading canvas data to/from JSON files using Gson. Supports both manual file selection and programmatic loading.
+#### **UserLogin.java**
 
-- **`CanvasObjectTypeAdapter`** and **`CanvasObjectAdapterFactory`**  
-  Custom Gson adapters for serializing/deserializing polymorphic `CanvasObject` types.
+- Provides a login form for users to authenticate.
+- Connects to a database using credentials from a `config.properties` file.
+- On successful login, opens the user dashboard (`UserHome`).
+- Offers a button to open the registration form (`UserRegistration`).
 
-- **`ColorTypeAdapter`**  
-  Gson adapter for serializing/deserializing `Color` objects.
+#### **UserRegistration.java**
 
----
+- Presents a registration form for new users (fields: first name, last name, email, username, mobile, password).
+- Validates input (e.g., mobile number length).
+- Stores new user credentials in the database.
+- On successful registration, opens the user dashboard (`UserHome`).
 
-### 5. **User Management and Sharing**
+#### **UserHome.java**
 
-- **`UserLogin`** and **`UserRegistration`**  
-  Swing forms for user authentication and registration, with database integration.
-
-- **`UserHome`**  
-  User dashboard for managing uploaded/saved plans, searching public plans, and uploading/downloading files via Dropbox. Includes account management features.
-
----
-
-### 6. **Utilities**
-
-- **`FurnitureLoader`**  
-  Singleton for loading and providing furniture images.
-
-- **`RotationUtility`**  
-  Utility for rotating objects (and contained objects) around a pivot.
-
-- **`PathManager`**  
-  Manages freeform paths (not heavily used in the main UI).
-
-
----
-
-## Key Features
-
-- **Interactive Drawing:**  
-  Draw rooms, place furniture, add doors/windows with mouse interactions.
-
-- **Object Manipulation:**  
-  Move, align, rotate, and delete objects. Context menus for advanced actions.
-
-- **Layered Rendering:**  
-  Ensures correct visual stacking of rooms, furniture, doors, and windows.
-
-- **Grid and Snap:**  
-  Optional grid display and snapping for precise placement.
-
-- **Persistence:**  
-  Save/load floor plans as JSON files.
-
-- **User Accounts:**  
-  Register, login, and access personalized dashboards.
-
-- **Cloud Integration:**  
-  Upload/download plans using Dropbox. Share public/private plans.
-
-- **Search and Browse:**  
-  Search for public plans by name, view uploaded/saved/archived plans.
+- The main dashboard after login.
+- **Navigation Panel**:  
+  Buttons for "All Plans", "Uploaded", "Saved", "Most Popular", "Archived", and "Account".
+- **Search Bar**:  
+  Allows searching for public plans by name.
+- **File Upload**:  
+  Lets users upload files to Dropbox, set access mode (public/private), and specify custom users for sharing.
+- **File Listing**:  
+  Displays uploaded and saved files, with clickable links to download and open them in the editor.
+- **Account Management**:  
+  Shows user details, number of uploads/saved files, and provides logout/change password options.
+- **Dropbox Integration**:  
+  Handles file upload/download using Dropbox API, with credentials loaded from `config.properties`.
+- **Database Integration**:  
+  Stores file metadata (name, uploader, access, link, file ID) and supports queries for searching and listing files.
 
 ---
 
-## How to Run
+## How User Management Works
 
-1. **Run `SketchApp`** for the main drawing application.
-2. **Run `UserLogin` or `UserRegistration`** for creating an account and logging in to the platform to share, upload and download floorplans.
+1. **Login**:  
+   Users enter their credentials in `UserLogin`. If valid, they are taken to `UserHome`.
+
+2. **Registration**:  
+   New users fill out the form in `UserRegistration`. On success, they are logged in and redirected to `UserHome`.
+
+3. **Dashboard (`UserHome`)**:  
+   - Users can upload new plans, search for public plans, and view/manage their files.
+   - Uploaded files are stored in Dropbox and indexed in the database.
+   - Users can download and open plans directly in the editor.
+   - Account details and logout/change password options are available.
+
+---
+
+## Example User Flow
+
+1. **Start the application** and register a new account or log in.
+2. **Design a floor plan** using the drawing tools.
+3. **Save your plan** locally or upload it to Dropbox via the dashboard.
+4. **Search for public plans** or view your uploaded/saved files.
+5. **Download and open** any plan for further editing.
+
+---
+
+## File Reference
+
+- `UserHome.java`: User dashboard, file sharing, Dropbox and DB integration.
+- `UserLogin.java`: Login form and authentication logic.
+- `UserRegistration.java`: Registration form and new user creation.
+
 ---
 
 ## Dependencies
 
-- **Swing** (Java standard library)
-- **Gson** (for JSON serialization)
-- **Dropbox Java SDK** (for file sharing)
-- **JDBC** (for database connection)
+- Java Swing (UI)
+- Gson (JSON serialization)
+- Dropbox Java SDK (cloud storage)
+- JDBC (database access)
 
+---
 
 ## ⚙️ Configuration
 
@@ -155,9 +164,19 @@ DB_USER="your_db_username"
 DB_PASSWORD="your_db_password"
 
 ```
+---
 
-## Running the Application
+## Getting Started
 
+1. Build and run the project in your Java IDE.
+Build:
+```
+mvn compile
+```
+Run:
 ```
 mvn exec:java -Dexec.mainClass="com.floorplannersharing.UserLogin"
+```
+
+
 ```
