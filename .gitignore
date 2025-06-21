@@ -3,3 +3,4 @@ target/classes/config.properties
 src/main/resources/config.properties
 target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
 target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+src/main/resources/config.properties
