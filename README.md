@@ -168,7 +168,7 @@ DB_PASSWORD="your_db_password"
 
 ## Getting Started
 
-1. Build and run the project in your Java IDE.
+1. Build and run the project in your Java IDE.<br>
 Build:
 ```
 mvn compile
