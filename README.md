@@ -13,6 +13,8 @@ Before running the project, make sure to configure your credentials and database
 src/main/resources
 ```
 
+config.properties file:
+
 ```properties
 dropbox.access.token="YOUR_DROPBOX_ACCESS_TOKEN"
 DB_URL="jdbc:mysql://localhost:3306/your_database_name"
