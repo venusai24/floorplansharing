@@ -17,7 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
-
+import io.github.cdimascio.dotenv.Dotenv;
 
 public class UserRegistration extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -137,6 +137,11 @@ public class UserRegistration extends JFrame {
                 String mobileNumber = mob.getText();
                 int len = mobileNumber.length();
                 String password = passwordField.getText();
+                 Dotenv dotenv = Dotenv.load();  // loads .env from root folder
+
+        String url = dotenv.get("DB_URL");
+        String user = dotenv.get("DB_USER");
+        String pswd = dotenv.get("DB_PASSWORD");
 
                 String msg = "" + firstName;
                 msg += " \n";
@@ -145,7 +150,7 @@ public class UserRegistration extends JFrame {
                 }
 
                 try {
-                    Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/floorplanner_db", "root", "venusql2024");
+                    Connection connection = DriverManager.getConnection(url, user, pswd);
 
                     String query = "INSERT INTO userauth values('" + userName + "','" +
                         password + "')";
