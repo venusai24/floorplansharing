@@ -19,8 +19,6 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
-import io.github.cdimascio.dotenv.Dotenv;
-
 public class UserLogin extends JFrame {
 
     private static final long serialVersionUID = 1L;
@@ -94,19 +92,24 @@ public class UserLogin extends JFrame {
         btnNewButton.setBounds(400, 392, 162, 73);
         btnNewButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                Dotenv dotenv = Dotenv.load();  // loads .env from root folder
-                String url = dotenv.get("DB_URL");
-                String user = dotenv.get("DB_USER");
-                String pswd = dotenv.get("DB_PASSWORD");
-                String userName = textField.getText();
-                String password = passwordField.getText();
                 try {
-                    Connection connection = (Connection) DriverManager.getConnection(url,
-                        user, pswd);
-
-                    PreparedStatement st = (PreparedStatement) connection
-                        .prepareStatement("Select name, password from userauth where name=? and password=?");
-
+                    java.io.InputStream inputStream = Thread.currentThread()
+                                .getContextClassLoader()
+                                .getResourceAsStream("config.properties");
+                    if (inputStream == null) {
+                        throw new java.io.FileNotFoundException("Property file 'config.properties' not found in the classpath");
+                    }
+                    java.util.Properties properties = new java.util.Properties();
+                    properties.load(inputStream);
+                    String url = properties.getProperty("DB_URL");
+                    String user = properties.getProperty("DB_USER");
+                    String pswd = properties.getProperty("DB_PASSWORD");
+                    String userName = textField.getText();
+                    String password = passwordField.getText();
+                    Connection connection = DriverManager.getConnection(url, user, pswd);
+                    PreparedStatement st = connection.prepareStatement(
+                        "Select name, password from userauth where name=? and password=?"
+                    );
                     st.setString(1, userName);
                     st.setString(2, password);
                     ResultSet rs = st.executeQuery();
@@ -119,7 +122,7 @@ public class UserLogin extends JFrame {
                     } else {
                         JOptionPane.showMessageDialog(btnNewButton, "Wrong Username & Password");
                     }
-                } catch (SQLException sqlException) {
+                } catch (Exception sqlException) {
                     sqlException.printStackTrace();
                 }
             }

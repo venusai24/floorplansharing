@@ -17,7 +17,6 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
-import io.github.cdimascio.dotenv.Dotenv;
 
 public class UserRegistration extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -137,24 +136,20 @@ public class UserRegistration extends JFrame {
                 String mobileNumber = mob.getText();
                 int len = mobileNumber.length();
                 String password = passwordField.getText();
-                 Dotenv dotenv = Dotenv.load();  // loads .env from root folder
-
-        String url = dotenv.get("DB_URL");
-        String user = dotenv.get("DB_USER");
-        String pswd = dotenv.get("DB_PASSWORD");
-
                 String msg = "" + firstName;
                 msg += " \n";
                 if (len != 10) {
                     JOptionPane.showMessageDialog(btnNewButton, "Enter a valid mobile number");
                 }
-
                 try {
+                    java.io.InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
+                    java.util.Properties properties = new java.util.Properties();
+                    properties.load(inputStream);
+                    String url = properties.getProperty("DB_URL");
+                    String user = properties.getProperty("DB_USER");
+                    String pswd = properties.getProperty("DB_PASSWORD");
                     Connection connection = DriverManager.getConnection(url, user, pswd);
-
-                    String query = "INSERT INTO userauth values('" + userName + "','" +
-                        password + "')";
-
+                    String query = "INSERT INTO userauth values('" + userName + "','" + password + "')";
                     Statement sta = connection.createStatement();
                     int x = sta.executeUpdate(query);
                     if (x == 0) {

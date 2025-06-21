@@ -39,6 +39,10 @@ public class UserHome extends JFrame {
     private File selectedFile;
     private DbxClientV2 dropboxClient;
     
+    private String dbUrl;
+    private String dbUser;
+    private String dbPassword;
+    
     /**
      * Launch the application.
      */
@@ -128,11 +132,11 @@ public class UserHome extends JFrame {
             String searchQuery = searchBar.getText();
             System.out.println(searchQuery);
             List<SearchedFile> searchedFiles = new ArrayList<>();
-             Dotenv dotenv = Dotenv.load();  // loads .env from root folder
 
-            String url = dotenv.get("DB_URL");
-            String user = dotenv.get("DB_USER");
-            String password = dotenv.get("DB_PASSWORD"); // Replace with your datbase password
+            // Use the fields loaded from config.properties
+            String url = dbUrl;
+            String user = dbUser;
+            String password = dbPassword;
 
             String query = "SELECT file_id, file_name, uploaded_by, link FROM files WHERE file_name LIKE ? AND access = 'public'";
             Connection conn = null;
@@ -142,7 +146,6 @@ public class UserHome extends JFrame {
                 conn = DriverManager.getConnection(url, user, password);
                 System.out.println("Connected to the database: " + conn.getCatalog());
                 pstmt = conn.prepareStatement(query);
-                // Set the file name parameter
                 pstmt.setString(1, "%" + searchQuery + "%");
 
                 rs = pstmt.executeQuery();
@@ -151,7 +154,7 @@ public class UserHome extends JFrame {
                 for (int i = 1; i <= metaData.getColumnCount(); i++) {
                     System.out.println("Column " + i + ": " + metaData.getColumnName(i));
                 }
-                if (!rs.isBeforeFirst()) { // Check if result set is empty
+                if (!rs.isBeforeFirst()) {
                     System.out.println("No data found!");
                 }
                 while (rs.next()) {
@@ -160,18 +163,13 @@ public class UserHome extends JFrame {
                     String file_name = rs.getString("file_name");
                     String uploadedBy = rs.getString("uploaded_by");
                     String link = rs.getString("link");
-
-                    
-
-                    // Create a SearchedFile object and add it to the list
                     SearchedFile searchedfile = new SearchedFile(fileId, file_name, uploadedBy, link);
                     searchedFiles.add(searchedfile);
                 }
-                
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 return;
-            }finally{
+            } finally {
                 try {
                     if (rs != null) rs.close();
                     if (pstmt != null) pstmt.close();
@@ -255,6 +253,25 @@ public class UserHome extends JFrame {
 
 
         initDropboxClient();
+
+        // Load DB credentials from config.properties
+        try {
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
+            if (inputStream == null) {
+                throw new FileNotFoundException("Property file 'config.properties' not found in the classpath");
+            }
+            Properties properties = new Properties();
+            properties.load(inputStream);
+            dbUrl = properties.getProperty("DB_URL");
+            dbUser = properties.getProperty("DB_USER");
+            dbPassword = properties.getProperty("DB_PASSWORD");
+            if (dbUrl == null || dbUser == null || dbPassword == null) {
+                throw new IllegalArgumentException("Database credentials are not configured in config.properties");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to load database credentials: " + e.getMessage());
+        }
     }
 
     private void displayAccountDetails(String userName) {
@@ -310,20 +327,16 @@ public class UserHome extends JFrame {
     private void initDropboxClient() {
     try {
         // Load config.properties from the resources folder
-      ////  InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
-//
-        //if (inputStream == null) {
-        //    throw new FileNotFoundException("Property file 'config.properties' not found in the classpath");
-        //}
-//
-        //Properties properties = new Properties();
-        //properties.load(inputStream);
-//
-        String accessToken = "sl.CDICT2bglVPB3AX5T2ve-oC8LuyH6wyGy6yjjwYXF_EBJvw1R02Nn-BUF4EInXiFuswA3ZCxaZGk0KLYAT2_KZsk6tAjNUWUL4XG29Icghj23N7JqIELL6Nh0W1Prhi7ykxnSG_r6NK_rHmw25wm";
-        //if (accessToken == null || accessToken.isEmpty()) {
-        //    throw new IllegalArgumentException("DROPBOX_ACCESS_TOKEN is not configured in config.properties");
-        //}
-
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
+        if (inputStream == null) {
+            throw new FileNotFoundException("Property file 'config.properties' not found in the classpath");
+        }
+        Properties properties = new Properties();
+        properties.load(inputStream);
+        String accessToken = properties.getProperty("dropbox.access.token");
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new IllegalArgumentException("dropbox.access.token is not configured in config.properties");
+        }
         // Initialize Dropbox client
         dropboxClient = new DbxClientV2(new DbxRequestConfig("JavaDropboxClient"), accessToken);
     } catch (Exception e) {
@@ -415,9 +428,9 @@ public File downloadFile(String dropboxFilePath) {
      private void displayUploadedFiles(String userName) {
         centerPanel.removeAll();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
-        String url = "jdbc:mysql://localhost:3306/floorplanner_db"; // Replace with your database URL
-        String username = "root"; // Replace with your database username
-        String password = "venusql2024"; // Replace with your database password
+        String url = dbUrl;
+        String username = dbUser;
+        String password = dbPassword;
         
         // SQL query to select all rows with a specific value in a column
         String sql = "SELECT * FROM files WHERE uploaded_by = ?"; // Replace with your table and column names
@@ -494,9 +507,9 @@ public File downloadFile(String dropboxFilePath) {
     private void uploadFileToDropbox(String userName, String fileName, String accessMode, String customUsers) {
         int ID = 0;
         String fileLink = "";
-        String url = "jdbc:mysql://localhost:3306/floorplanner_db"; // Replace with your database URL
-        String username = "root"; // Replace with your database username
-        String password = "venusql2024"; // Replace with your database password
+        String url = dbUrl;
+        String username = dbUser;
+        String password = dbPassword;
         
         // SQL query to insert a new row into the table
         String sql = "INSERT INTO files (file_name, uploaded_by, access, link, file_id) VALUES (?, ?, ?, ?, ?)"; // Replace with your table and column names
